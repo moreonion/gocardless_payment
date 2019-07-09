@@ -1,0 +1,148 @@
+<?php
+
+/**
+ * @file
+ * Hook implementations for the gocardless_payment module.
+ */
+
+use Drupal\gocardless_payment\PaymentStatus;
+use Drupal\gocardless_payment\RedirectFlowController;
+
+/**
+ * Implements hook_payment_method_controller_info().
+ */
+function gocardless_payment_payment_method_controller_info() {
+  $info['gocardless_redirect_flow'] = RedirectFlowController::class;
+  return $info;
+}
+
+/**
+ * Implements hook_payment_status_info().
+ */
+function gocardless_payment_status_info() {
+  $statuses[] = new PaymentStatusInfo([
+    'description' => t('Gocardless: redirect flow created. Redirecting …'),
+    'status' => PaymentStatus::REDIRECT_FLOW_CREATED,
+    'parent' => PAYMENT_STATUS_PENDING,
+    'title' => t('Redirect flow created'),
+  ]);
+  return $statuses;
+}
+
+/**
+ * Implements hook_menu().
+ */
+function gocardless_payment_menu() {
+  $items['gocardless_payment/return/%entity_object/%'] = [
+    'title' => 'Return from SagePay’s payment pages',
+    'page callback' => 'sagepay_payment_return_callback',
+    'load arguments' => ['payment'],
+    'page arguments' => [2],
+    'access callback' => 'gocardless_payment_check_hash',
+    'access arguments' => [2, 3],
+    'type' => MENU_CALLBACK,
+  ];
+  return $items;
+}
+
+/**
+ * Generate the HMAC signature for a payment.
+ *
+ * @param int $pid
+ *   The payment ID.
+ *
+ * @return string
+ *   A base64 encoded HMAC signature unique for this payment ID.
+ */
+function gocardless_payment_signature($pid) {
+  $data = "gocardless_payment.$pid";
+  $key = drupal_get_private_key() . drupal_get_hash_salt();
+  return drupal_hmac_base64($data, $key);
+}
+
+/**
+ * Access callback: Check the payment signature.
+ *
+ * @param \Payment $payment
+ *   The payment for which the user should be authorized.
+ * @param string $hash
+ *   The hash to check.
+ *
+ * @see gocardless_payment_menu()
+ */
+function gocardless_payment_check_hash(Payment $payment, $hash) {
+  return $payment->pid && $hash == gocardless_payment_signature($payment->pid);
+}
+
+/**
+ * Page callback: Return from Gocardless’ payment pages.
+ *
+ * @param \Payment $payment
+ *   The payment for which the user is being redirected.
+ *
+ * @see gocardless_payment_menu()
+ */
+function gocardless_payment_return_callback(Payment $payment) {
+  $payment->method->controller->completeRedirectFlow($payment);
+  $payment->finish();
+}
+
+/**
+ * Implements hook_entity_load().
+ */
+function gocardless_payment_entity_load(array $entities, $entity_type) {
+  if ($entity_type == 'payment') {
+    $query = db_select('gocardless_payment', 't')
+      ->fields('t')
+      ->condition('pid', array_keys($entities));
+    $result = $query->execute();
+    while ($data = $result->fetchAssoc()) {
+      $payment = $entities[$data['pid']];
+      unset($data['pid']);
+      $payment->gocardless = $data;
+    }
+  }
+}
+
+/**
+ * Implements hook_payment_insert().
+ */
+function gocardless_payment_payment_insert(Payment $payment) {
+  if ($payment->method->controller instanceof RedirectFlowController) {
+    $data = !empty($payment->gocardless) ? $payment->gocardless : [];
+    $data += [
+      'session_token' => '',
+      'redirect_flow_id' => '',
+      'customer_id' => '',
+      'mandate_id' => '',
+    ];
+    $data['pid'] = $payment->pid;
+    db_insert('gocardless_payment')->fields($data)->execute();
+  }
+}
+
+/**
+ * Implements hook_payment_update().
+ */
+function gocardless_payment_payment_update(Payment $payment) {
+  if ($payment->method->controller instanceof RedirectFlowController) {
+    $data = !empty($payment->gocardless) ? $payment->gocardless : [];
+    $data += [
+      'session_token' => '',
+      'redirect_flow_id' => '',
+      'customer_id' => '',
+      'mandate_id' => '',
+    ];
+    db_update('gocardless_payment')
+      ->fields($data)
+      ->condition('pid', $payment->pid)
+      ->execute();
+  }
+}
+
+/**
+ * Implements hook_payment_delete().
+ */
+function gocardless_payment_payment_delete(Payment $payment) {
+  db_delete('gocardless_payment')->condition('pid', $payment->pid)->execute();
+}

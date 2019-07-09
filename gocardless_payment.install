@@ -1,0 +1,42 @@
+<?php
+
+/**
+ * @file
+ * Installation and uninstallation functions.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function gocardless_payment_schema() {
+  $string_id = [
+    'type' => 'varchar',
+    'length' => 32,
+    'not null' => TRUE,
+    'default' => '',
+  ];
+  $schema['gocardless_payment'] = [
+    'fields' => [
+      'pid' => [
+        'description' => 'The payment id.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ],
+      'session_token' => [
+        'description' => 'Session token used during a transaction.',
+      ] + $string_id,
+      'redirect_flow_id' => [
+        'description' => 'ID of the last redirect flow created for this payment.',
+      ] + $string_id,
+      'customer_id' => [
+        'description' => 'ID of the customer that was created when completing the redirect flow.',
+      ] + $string_id,
+      'mandate_id' => [
+        'description' => 'ID of the mandate that was created when completing the redirect flow.',
+      ] + $string_id,
+    ],
+    'primary key' => ['pid'],
+  ];
+  return $schema;
+}
