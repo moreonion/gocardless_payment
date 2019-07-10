@@ -200,4 +200,14 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
     $this->assertEqual(PAYMENT_STATUS_SUCCESS, $payment->getStatus()->status);
   }
 
+  /**
+   * Test validaing payment
+   */
+  public function testValidatePaymentWithoutLineItems() {
+    $payment = $this->payment;
+    unset($payment->line_items['line_item_name']);
+    $this->expectException(\PaymentValidationException::class);
+    $payment->method->controller->validate($payment, $payment->method, TRUE);
+  }
+
 }

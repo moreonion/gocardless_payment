@@ -142,19 +142,21 @@ class RedirectFlowController extends \PaymentMethodController {
   function validate(\Payment $payment, \PaymentMethod $method, $strict) {
     parent::validate($payment, $method, $strict);
 
-    if (!in_array($payment->currency_code, static::SUPPORTED_CURRENCIES)) {
-      throw new \PaymentValidationException(t('Unsupported currency for gocardless: @code', ['@code' => $payment->currency_code]));
-    }
-
-    $at_least_one_line_item = FALSE;
-    foreach ($payment->line_item as $line_item) {
-      if ($line_item->quantity > 0) {
-        $at_least_one_line_item = TRUE;
-        break;
+    if ($strict) {
+      if (!in_array($payment->currency_code, static::SUPPORTED_CURRENCIES)) {
+        throw new \PaymentValidationException(t('Unsupported currency for gocardless: @code', ['@code' => $payment->currency_code]));
       }
-    }
-    if (!$at_least_one_line_item) {
-      throw new \PaymentValidationException(t('Can’t process payments without non-empty line items.'));
+
+      $at_least_one_line_item = FALSE;
+      foreach ($payment->line_items as $line_item) {
+        if ($line_item->quantity > 0) {
+          $at_least_one_line_item = TRUE;
+          break;
+        }
+      }
+      if (!$at_least_one_line_item) {
+        throw new \PaymentValidationException(t('Can’t process payments without non-empty line items.'));
+      }
     }
   }
 
