@@ -172,12 +172,49 @@ class RedirectFlowController extends \PaymentMethodController {
    * Complete the redirect flow in order to create the customer and mandate.
    */
   public function completeRedirectFlow(\Payment $payment, ApiClient $client = NULL) {
+    $client = $client ?? $this->getClient($payment);
     $flow_id = $payment->gocardless['redirect_flow_id'];
     $data['data']['session_token'] = $payment->gocardless['session_token'];
     $response = $client->post("redirect_flows/$flow_id/actions/complete", [], $data);
     $payment->gocardless['mandate_id'] = $response['redirect_flows']['links']['mandate'];
     $payment->gocardless['customer_id'] = $response['redirect_flows']['links']['customer'];
     $payment->setStatus(new \PaymentStatusItem(PaymentStatus::MANDATE_CREATED));
+  }
+
+  public function processLineItems(\Payment $payment, ApiClient $client = NULL) {
+    $client = $client ?? $this->getClient($payment);
+    $currency = currency_load($payment->currency_code);
+    foreach ($payment->line_items as $name => $line_item) {
+      if ($line_item->quantity == 0) {
+        continue;
+      }
+      $data = [
+        'currency' => $payment->currency_code,
+        'amount' => (int) round($line_item->totalAmount(TRUE) * $currency->subunits),
+      ];
+      $data['metadata'] = [
+        'pid' => $payment->pid,
+        'name' => $name,
+      ];
+      $data['links']['mandate'] = $payment->gocardless['mandate_id'];
+      if (!empty($line_item->recurrence['interval_unit'])) {
+        $recurrence = $line_item->recurrence;
+        $data += array_filter([
+          'name' => $line_item->description,
+          'interval_unit' => $recurrence['interval_unit'],
+          'interval' => $recurrence['interval_value'] ?? 1,
+          'day_of_month' => $recurrence['day_of_month'] ?? NULL,
+          'count' => $recurrence['count'] ?? NULL,
+        ]);
+        $data = ['subscriptions' => $data];
+        $response = $client->post('subscriptions', [], $data);
+      }
+      else {
+        $data['description'] = $line_item->description;
+        $data = ['payments' => $data];
+        $response = $client->post('payments', [], $data);
+      }
+    }
   }
 
 }

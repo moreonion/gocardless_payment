@@ -27,6 +27,7 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
     $context = $this->createMock(NullPaymentContext::class);
     $this->payment = new \Payment([
       'description' => 'gocardless test payment',
+      'currency_code' => 'EUR',
       'method' => $method,
       'method_data' => [
         'customer_data' => [
@@ -37,6 +38,16 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
       ],
       'contextObj' => $context,
     ]);
+    $this->payment->setLineItem(new \PaymentLineItem([
+      'name' => 'line_item_name',
+      'description' => 'line item description',
+      'amount' => 5,
+      'quantity' => 3,
+      'recurrence' => [
+        'interval_unit' => 'monthly',
+        'day_of_month' => 4,
+      ],
+    ]));
   }
 
   /**
@@ -119,6 +130,70 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
       'customer_id' => 'CU123',
     ], $payment->gocardless);
     $this->assertEqual(PaymentStatus::MANDATE_CREATED, $payment->getStatus()->status);
+  }
+
+  /**
+   * Test creating a monthly subscription.
+   */
+  public function testProcessLineItemsMonthly() {
+    $payment = $this->payment;
+    $payment->gocardless = [
+      'redirect_flow_id' => 'RE123',
+      'session_token' => 'test session token',
+      'mandate_id' => 'MD123',
+      'customer_id' => 'CU123',
+    ];
+
+    $client = $this->createMock(ApiClient::class);
+    $post_data['subscriptions'] = [
+      'amount' => 1500,
+      'currency' => 'EUR',
+      'name' => 'line item description',
+      'interval_unit' => 'monthly',
+      'interval' => 1,
+      'day_of_month' => 4,
+      'metadata' => [
+        'pid' => $payment->pid,
+        'name' => 'line_item_name',
+      ],
+      'links' => ['mandate' => $payment->gocardless['mandate_id']],
+    ];
+    $response_data['subscriptions'] = [];
+    $client->expects($this->once())->method('post')
+      ->with('subscriptions', [], $post_data)->willReturn($response_data);
+
+    $payment->method->controller->processLineItems($payment, $client);
+  }
+
+  /**
+   * Test collecting a one-time payment.
+   */
+  public function testProcessLineItemsOneTime() {
+    $payment = $this->payment;
+    unset($payment->line_items['line_item_name']->recurrence['interval_unit']);
+    $payment->gocardless = [
+      'redirect_flow_id' => 'RE123',
+      'session_token' => 'test session token',
+      'mandate_id' => 'MD123',
+      'customer_id' => 'CU123',
+    ];
+
+    $client = $this->createMock(ApiClient::class);
+    $post_data['payments'] = [
+      'amount' => 1500,
+      'currency' => 'EUR',
+      'description' => 'line item description',
+      'metadata' => [
+        'pid' => $payment->pid,
+        'name' => 'line_item_name',
+      ],
+      'links' => ['mandate' => $payment->gocardless['mandate_id']],
+    ];
+    $response_data['payments'] = [];
+    $client->expects($this->once())->method('post')
+      ->with('payments', [], $post_data)->willReturn($response_data);
+
+    $payment->method->controller->processLineItems($payment, $client);
   }
 
 }

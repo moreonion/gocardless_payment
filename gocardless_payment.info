@@ -3,6 +3,7 @@ description = Integrates gocardless with the payment module.
 core = 7.x
 php = 7.1
 
+dependencies[] = currency
 dependencies[] = little_helpers (>= 7.x-1.4)
 dependencies[] = payment (>= 7.x-1.10)
 dependencies[] = payment_context
