@@ -39,7 +39,7 @@ class RedirectFlowController extends \PaymentMethodController {
         'required' => FALSE,
         'display_other' => 'hidden',
       ],
-      'phone' => [
+      'phone_number' => [
         'display' => 'hidden',
         'keys' => ['phone_number', 'mobile_number'],
         'required' => FALSE,
@@ -173,7 +173,7 @@ class RedirectFlowController extends \PaymentMethodController {
     if ($payment->method->controller_data['creditor']) {
       $data['links']['creditor'] = '';
     }
-    $response = $this->getClient($payment)->post('redirect_flows', [], $data);
+    $response = $this->getClient($payment)->post('redirect_flows', [], ['redirect_flows' => $data]);
     $payment->gocardless = [
       'redirect_flow_id' => $response['redirect_flows']['id'],
       'session_token' => $data['session_token'],
@@ -211,7 +211,7 @@ class RedirectFlowController extends \PaymentMethodController {
         'amount' => (int) round($line_item->totalAmount(TRUE) * $currency->subunits),
       ];
       $data['metadata'] = [
-        'pid' => $payment->pid,
+        'pid' => (string) $payment->pid,
         'name' => $name,
       ];
       $data['links']['mandate'] = $payment->gocardless['mandate_id'];

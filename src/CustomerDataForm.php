@@ -83,6 +83,8 @@ class CustomerDataForm implements PaymentFormInterface {
         }
       }
     });
+    $values['customer_data'] += $values['customer_data']['address'];
+    unset($values['customer_data']['address']);
     $payment->method_data += $values;
   }
 
@@ -110,7 +112,7 @@ class CustomerDataForm implements PaymentFormInterface {
       '#type' => 'textfield',
       '#title' => t('Email'),
     ];
-    $element['phone'] = [
+    $element['phone_number'] = [
       '#type' => 'textfield',
       '#title' => t('Phone number'),
     ];

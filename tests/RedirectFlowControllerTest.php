@@ -70,7 +70,7 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
 
     $post_data = NULL;
     $client->expects($this->once())->method('post')->with('redirect_flows', [], $this->callback(function ($data) use (&$post_data) {
-      $post_data = $data;
+      $post_data = $data['redirect_flows'];
       return TRUE;
     }))->willReturn([
       'redirect_flows' => [

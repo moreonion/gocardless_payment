@@ -19,7 +19,7 @@ function gocardless_payment_payment_method_controller_info() {
 /**
  * Implements hook_payment_status_info().
  */
-function gocardless_payment_status_info() {
+function gocardless_payment_payment_status_info() {
   $statuses[] = new PaymentStatusInfo([
     'description' => t('Gocardless: redirect flow created. Redirecting …'),
     'status' => PaymentStatus::REDIRECT_FLOW_CREATED,
@@ -35,7 +35,7 @@ function gocardless_payment_status_info() {
 function gocardless_payment_menu() {
   $items['gocardless_payment/return/%entity_object/%'] = [
     'title' => 'Return from SagePay’s payment pages',
-    'page callback' => 'sagepay_payment_return_callback',
+    'page callback' => 'gocardless_payment_return_callback',
     'load arguments' => ['payment'],
     'page arguments' => [2],
     'access callback' => 'gocardless_payment_check_hash',
@@ -83,7 +83,9 @@ function gocardless_payment_check_hash(Payment $payment, $hash) {
  * @see gocardless_payment_menu()
  */
 function gocardless_payment_return_callback(Payment $payment) {
-  $payment->method->controller->completeRedirectFlow($payment);
+  $controller = $payment->method->controller;
+  $controller->completeRedirectFlow($payment);
+  $controller->processLineItems($payment);
   $payment->finish();
 }
 
