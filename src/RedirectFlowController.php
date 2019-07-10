@@ -194,6 +194,9 @@ class RedirectFlowController extends \PaymentMethodController {
     $payment->setStatus(new \PaymentStatusItem(PaymentStatus::MANDATE_CREATED));
   }
 
+  /**
+   * Create payments and subscriptions based on the line-items.
+   */
   public function processLineItems(\Payment $payment) {
     $client = $this->getClient($payment);
     $currency = currency_load($payment->currency_code);
@@ -228,6 +231,7 @@ class RedirectFlowController extends \PaymentMethodController {
         $response = $client->post('payments', [], $data);
       }
     }
+    $payment->setStatus(new \PaymentStatusItem(PAYMENT_STATUS_SUCCESS));
   }
 
 }

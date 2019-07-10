@@ -165,6 +165,7 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
       ->with('subscriptions', [], $post_data)->willReturn($response_data);
 
     $payment->method->controller->processLineItems($payment, $client);
+    $this->assertEqual(PAYMENT_STATUS_SUCCESS, $payment->getStatus()->status);
   }
 
   /**
@@ -196,6 +197,7 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
       ->with('payments', [], $post_data)->willReturn($response_data);
 
     $payment->method->controller->processLineItems($payment, $client);
+    $this->assertEqual(PAYMENT_STATUS_SUCCESS, $payment->getStatus()->status);
   }
 
 }
