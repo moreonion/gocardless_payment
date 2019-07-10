@@ -8,6 +8,7 @@ namespace Drupal\gocardless_payment;
 class RedirectFlowController extends \PaymentMethodController {
 
   const SUPPORTED_CURRENCIES = ['GBP', 'EUR', 'SEK', 'DKK', 'AUD', 'NZD', 'CAD'];
+  protected $client = NULL;
 
   public $controller_data_defaults = [
     'testmode' => FALSE,
@@ -114,12 +115,25 @@ class RedirectFlowController extends \PaymentMethodController {
   }
 
   /**
+   * Set the client.
+   *
+   * @param \Drupal\gocardless_payment\ApiClient $client
+   *   The API-client to use for this controller.
+   */
+  public function setClient(ApiClient $client) {
+    $this->client = $client;
+  }
+
+  /**
    * Get API-client based on the controller settings.
    *
    * @return \Drupal\gocardless_payment\ApiClient
    */
   public function getClient(\Payment $payment) {
-    return ApiClient::fromConfig($payment->method->controller_data);
+    if (!$this->client) {
+      $this->client = ApiClient::fromConfig($payment->method->controller_data);
+    }
+    return $this->client;
   }
 
   /**
@@ -147,8 +161,7 @@ class RedirectFlowController extends \PaymentMethodController {
   /**
    * Executes a transaction.
    */
-  public function execute(\Payment $payment, ApiClient $client = NULL) {
-    $client = $client ?? $this->getClient($payment);
+  public function execute(\Payment $payment) {
     entity_save('payment', $payment);
     $data['session_token'] = drupal_random_key(8);
     $signature = gocardless_payment_signature($payment->pid);
@@ -158,7 +171,7 @@ class RedirectFlowController extends \PaymentMethodController {
     if ($payment->method->controller_data['creditor']) {
       $data['links']['creditor'] = '';
     }
-    $response = $client->post('redirect_flows', [], $data);
+    $response = $this->getClient($payment)->post('redirect_flows', [], $data);
     $payment->gocardless = [
       'redirect_flow_id' => $response['redirect_flows']['id'],
       'session_token' => $data['session_token'],
@@ -171,18 +184,18 @@ class RedirectFlowController extends \PaymentMethodController {
   /**
    * Complete the redirect flow in order to create the customer and mandate.
    */
-  public function completeRedirectFlow(\Payment $payment, ApiClient $client = NULL) {
-    $client = $client ?? $this->getClient($payment);
+  public function completeRedirectFlow(\Payment $payment) {
     $flow_id = $payment->gocardless['redirect_flow_id'];
     $data['data']['session_token'] = $payment->gocardless['session_token'];
-    $response = $client->post("redirect_flows/$flow_id/actions/complete", [], $data);
+    $response = $this->getClient($payment)
+      ->post("redirect_flows/$flow_id/actions/complete", [], $data);
     $payment->gocardless['mandate_id'] = $response['redirect_flows']['links']['mandate'];
     $payment->gocardless['customer_id'] = $response['redirect_flows']['links']['customer'];
     $payment->setStatus(new \PaymentStatusItem(PaymentStatus::MANDATE_CREATED));
   }
 
-  public function processLineItems(\Payment $payment, ApiClient $client = NULL) {
-    $client = $client ?? $this->getClient($payment);
+  public function processLineItems(\Payment $payment) {
+    $client = $this->getClient($payment);
     $currency = currency_load($payment->currency_code);
     foreach ($payment->line_items as $name => $line_item) {
       if ($line_item->quantity == 0) {

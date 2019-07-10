@@ -16,6 +16,7 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
   public function setUp() {
     parent::setUp();
     $controller = new RedirectFlowController();
+    $controller->setClient($this->createMock(ApiClient::class));
     $method = new \PaymentMethod([
       'controller' => $controller,
       'controller_data' => [
@@ -64,7 +65,8 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
    * Test creating a redirect flow and redirecting the user.
    */
   public function testExecute() {
-    $client = $this->createMock(ApiClient::class);
+    $payment = $this->payment;
+    $client = $payment->method->controller->getClient($payment);
 
     $post_data = NULL;
     $client->expects($this->once())->method('post')->with('redirect_flows', [], $this->callback(function ($data) use (&$post_data) {
@@ -76,37 +78,37 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
         'redirect_url' => 'http://gocardless/redirect',
       ],
     ]);
-    $this->payment->contextObj->expects($this->once())->method('redirect')
+    $payment->contextObj->expects($this->once())->method('redirect')
       ->with('http://gocardless/redirect');
 
-    $this->payment->method->controller->execute($this->payment, $client);
+    $payment->method->controller->execute($payment, $client);
 
     $session_token = $post_data['session_token'];
     $this->assertGreaterThan(8, strlen($session_token));
     unset($post_data['session_token']);
-    $signature = gocardless_payment_signature($this->payment->pid);
-    $this->assertStringEndsWith("/gocardless_payment/return/{$this->payment->pid}/$signature", $post_data['success_redirect_url']);
+    $signature = gocardless_payment_signature($payment->pid);
+    $this->assertStringEndsWith("/gocardless_payment/return/{$payment->pid}/$signature", $post_data['success_redirect_url']);
     unset($post_data['success_redirect_url']);
     $this->assertEqual([
       'description' => 'gocardless test payment',
-      'prefilled_customer' => $this->payment->method_data['customer_data'],
+      'prefilled_customer' => $payment->method_data['customer_data'],
     ], $post_data);
 
     $this->assertEqual([
       'session_token' => $session_token,
       'redirect_flow_id' => 'RE123',
-    ], $this->payment->gocardless);
+    ], $payment->gocardless);
   }
 
   /**
    * Test completing a redirect flow.
    */
   public function testCompleteRedirectFlow() {
-    $client = $this->createMock(ApiClient::class);
     $payment = $this->payment;
     $payment->gocardless['redirect_flow_id'] = 'RE123';
     $payment->gocardless['session_token'] = 'test session token';
 
+    $client = $payment->method->controller->getClient($payment);
     $client->expects($this->once())->method('post')->with("redirect_flows/{$payment->gocardless['redirect_flow_id']}/actions/complete", [], [
       'data' => ['session_token' => 'test session token'],
     ])->willReturn([
@@ -144,7 +146,7 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
       'customer_id' => 'CU123',
     ];
 
-    $client = $this->createMock(ApiClient::class);
+    $client = $payment->method->controller->getClient($payment);
     $post_data['subscriptions'] = [
       'amount' => 1500,
       'currency' => 'EUR',
@@ -178,7 +180,7 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
       'customer_id' => 'CU123',
     ];
 
-    $client = $this->createMock(ApiClient::class);
+    $client = $payment->method->controller->getClient($payment);
     $post_data['payments'] = [
       'amount' => 1500,
       'currency' => 'EUR',
