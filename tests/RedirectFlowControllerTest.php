@@ -105,6 +105,7 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
    */
   public function testCompleteRedirectFlow() {
     $payment = $this->payment;
+    $payment->setStatus(new \PaymentStatusItem(PaymentStatus::REDIRECT_FLOW_CREATED));
     $payment->gocardless['redirect_flow_id'] = 'RE123';
     $payment->gocardless['session_token'] = 'test session token';
 
@@ -139,6 +140,7 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
    */
   public function testProcessLineItemsMonthly() {
     $payment = $this->payment;
+    $payment->setStatus(new \PaymentStatusItem(PaymentStatus::MANDATE_CREATED));
     $payment->gocardless = [
       'redirect_flow_id' => 'RE123',
       'session_token' => 'test session token',
@@ -173,6 +175,7 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
    */
   public function testProcessLineItemsOneTime() {
     $payment = $this->payment;
+    $payment->setStatus(new \PaymentStatusItem(PaymentStatus::MANDATE_CREATED));
     unset($payment->line_items['line_item_name']->recurrence['interval_unit']);
     $payment->gocardless = [
       'redirect_flow_id' => 'RE123',

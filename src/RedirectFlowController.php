@@ -187,6 +187,9 @@ class RedirectFlowController extends \PaymentMethodController {
    * Complete the redirect flow in order to create the customer and mandate.
    */
   public function completeRedirectFlow(\Payment $payment) {
+    if ($payment->getStatus()->status != PaymentStatus::REDIRECT_FLOW_CREATED) {
+      return;
+    }
     $flow_id = $payment->gocardless['redirect_flow_id'];
     $data['data']['session_token'] = $payment->gocardless['session_token'];
     $response = $this->getClient($payment)
@@ -200,6 +203,9 @@ class RedirectFlowController extends \PaymentMethodController {
    * Create payments and subscriptions based on the line-items.
    */
   public function processLineItems(\Payment $payment) {
+    if ($payment->getStatus()->status != PaymentStatus::MANDATE_CREATED) {
+      return;
+    }
     $client = $this->getClient($payment);
     $currency = currency_load($payment->currency_code);
     foreach ($payment->line_items as $name => $line_item) {
