@@ -72,15 +72,9 @@ class CustomerDataForm implements PaymentFormInterface {
    */
   public function validate(array $element, array &$form_state, \Payment $payment) {
     $values = drupal_array_get_nested_value($form_state['values'], $element['#parents']);
-    $pd = &$element['customer_data'];
-    ElementTree::applyRecursively($pd, function (&$element, $key) {
+    ElementTree::applyRecursively($element['customer_data'], function (&$element, $key) {
       if (!empty($element['#controller_required']) && empty($element['#value'])) {
-        if (isset($element['#title'])) {
-          form_error($element, t('!name field is required.', ['!name' => $element['#title']]));
-        }
-        else {
-          form_error($element);
-        }
+        form_error($element, t('!name field is required.', ['!name' => $element['#title']]));
       }
     });
     $values['customer_data'] += $values['customer_data']['address'];
