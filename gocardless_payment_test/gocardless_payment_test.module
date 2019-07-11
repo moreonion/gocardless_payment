@@ -1,0 +1,7 @@
+<?php
+
+/**
+ * Dummy finish callback for testing.
+ */
+function gocardless_payment_test_finish_callback(\Payment $payment) {
+}

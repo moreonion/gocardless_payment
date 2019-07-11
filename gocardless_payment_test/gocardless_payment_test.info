@@ -1,0 +1,5 @@
+name = Gocardless payment test module
+core = 7.x
+hidden = TRUE
+
+dependencies[] = gocardless_payment

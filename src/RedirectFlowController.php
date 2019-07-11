@@ -127,7 +127,11 @@ class RedirectFlowController extends \PaymentMethodController {
   /**
    * Get API-client based on the controller settings.
    *
+   * @param \Payment $payment
+   *   The payment to get the API-client for.
+   *
    * @return \Drupal\gocardless_payment\ApiClient
+   *   The API-client to use for this payment.
    */
   public function getClient(\Payment $payment) {
     if (!$this->client) {
@@ -139,7 +143,7 @@ class RedirectFlowController extends \PaymentMethodController {
   /**
    * Check if the payment can be processed by this payment method.
    */
-  function validate(\Payment $payment, \PaymentMethod $method, $strict) {
+  public function validate(\Payment $payment, \PaymentMethod $method, $strict) {
     parent::validate($payment, $method, $strict);
 
     if ($strict) {
@@ -151,7 +155,11 @@ class RedirectFlowController extends \PaymentMethodController {
       foreach ($payment->line_items as $line_item) {
         if ($line_item->quantity > 0) {
           $at_least_one_line_item = TRUE;
-          break;
+        }
+        if (!empty($line_item->recurrence['interval_unit'])) {
+          if (!in_array($line_item->recurrence['interval_unit'], ['yearly', 'monthly', 'weekly'])) {
+            throw new \PaymentValidationException(t('Unsupported recurrence interval_unit: @unit.', ['@unit' => $line_item->recurrence['interval_unit']]));
+          }
         }
       }
       if (!$at_least_one_line_item) {
@@ -168,7 +176,7 @@ class RedirectFlowController extends \PaymentMethodController {
     $data['session_token'] = drupal_random_key(8);
     $signature = gocardless_payment_signature($payment->pid);
     $data['success_redirect_url'] = url("gocardless_payment/return/{$payment->pid}/$signature", ['absolute' => TRUE]);
-    $data['description'] = t($payment->description, $payment->description_arguments);
+    $data['description'] = format_string($payment->description, $payment->description_arguments);
     $data['prefilled_customer'] = $payment->method_data['customer_data'];
     if ($payment->method->controller_data['creditor']) {
       $data['links']['creditor'] = '';

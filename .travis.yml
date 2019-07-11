@@ -27,7 +27,7 @@ before_script:
   - ln -s $repo $root/sites/all/modules/module_under_test
   - cd $root
   - drush dl little_helpers payment payment_context payment_controller_data
-  - drush --yes pm-enable gocardless_payment
+  - drush --yes pm-enable gocardless_payment_test
 
 script:
   - cd $repo

@@ -38,6 +38,7 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
         ],
       ],
       'contextObj' => $context,
+      'finish_callback' => 'gocardless_payment_test_finish_callback',
     ]);
     $this->payment->setLineItem(new \PaymentLineItem([
       'name' => 'line_item_name',
@@ -204,13 +205,44 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
   }
 
   /**
-   * Test validaing payment
+   * Validate a payment against its controller and get the exception thrown.
+   *
+   * @param \Payment $payment
+   *   Payment to validate.
+   *
+   * @return \PaymentValidationException|null
+   *   The validation exception if any was thrown or NULL.
+   */
+  protected function getValidationException(\Payment $payment) {
+    try {
+      $payment->method->controller->validate($payment, $payment->method, TRUE);
+    }
+    catch (\PaymentValidationException $e) {
+      return $e;
+    }
+    return NULL;
+  }
+
+  /**
+   * Test validating payment without line items.
    */
   public function testValidatePaymentWithoutLineItems() {
     $payment = $this->payment;
     unset($payment->line_items['line_item_name']);
-    $this->expectException(\PaymentValidationException::class);
-    $payment->method->controller->validate($payment, $payment->method, TRUE);
+    $e = $this->getValidationException($payment);
+    $this->assertNotEmpty($e);
+    $this->assertEqual('Can’t process payments without non-empty line items.', $e->getMessage());
+  }
+
+  /**
+   * Test validating payment with invalid recurrence.
+   */
+  public function testValidatePaymentWithInvalidRecurrence() {
+    $payment = $this->payment;
+    $payment->line_items['line_item_name']->recurrence['interval_unit'] = 'invalid';
+    $e = $this->getValidationException($payment);
+    $this->assertNotEmpty($e);
+    $this->assertEqual('Unsupported recurrence interval_unit: invalid.', $e->getMessage());
   }
 
 }
