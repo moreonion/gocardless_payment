@@ -26,6 +26,18 @@ function gocardless_payment_payment_status_info() {
     'parent' => PAYMENT_STATUS_PENDING,
     'title' => t('Redirect flow created'),
   ]);
+  $statuses[] = new PaymentStatusInfo([
+    'description' => t('Gocardless: Returned from gocardless'),
+    'status' => PaymentStatus::REDIRECT_FLOW_RETURNED,
+    'parent' => PAYMENT_STATUS_PENDING,
+    'title' => t('Redirect flow returned'),
+  ]);
+  $statuses[] = new PaymentStatusInfo([
+    'description' => t('Gocardless: Mandate created'),
+    'status' => PaymentStatus::MANDATE_CREATED,
+    'parent' => PAYMENT_STATUS_PENDING,
+    'title' => t('Mandate created'),
+  ]);
   return $statuses;
 }
 
