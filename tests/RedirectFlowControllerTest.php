@@ -101,6 +101,25 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
     ], $payment->gocardless);
   }
 
+  public function testExecuteWithCreditor() {
+    $payment = $this->payment;
+    $payment->method->controller_data['creditor'] = 'CR123';
+    $client = $payment->method->controller->getClient($payment);
+
+    $post_data = NULL;
+    $client->expects($this->once())->method('post')->with('redirect_flows', [], $this->callback(function ($data) use (&$post_data) {
+      $post_data = $data['redirect_flows'];
+      return TRUE;
+    }))->willReturn([
+      'redirect_flows' => [
+        'id' => 'RE123',
+        'redirect_url' => 'http://gocardless/redirect',
+      ],
+    ]);
+    $payment->method->controller->execute($payment, $client);
+    $this->assertEqual('CR123', $post_data['links']['creditor']);
+  }
+
   /**
    * Test control flow based on status items.
    */

@@ -180,8 +180,8 @@ class RedirectFlowController extends \PaymentMethodController {
     $data['success_redirect_url'] = url("gocardless_payment/return/{$payment->pid}/$signature", ['absolute' => TRUE]);
     $data['description'] = format_string($payment->description, $payment->description_arguments);
     $data['prefilled_customer'] = $payment->method_data['customer_data'];
-    if ($payment->method->controller_data['creditor']) {
-      $data['links']['creditor'] = '';
+    if ($creditor = $payment->method->controller_data['creditor']) {
+      $data['links']['creditor'] = $creditor;
     }
     try {
       $response = $this->getClient($payment)->post('redirect_flows', [], ['redirect_flows' => $data]);
