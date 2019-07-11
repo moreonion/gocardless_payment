@@ -2,6 +2,8 @@
 
 namespace Drupal\gocardless_payment;
 
+use Drupal\gocardless_payment\Errors\ApiError;
+
 /**
  * Payment controller for gocardless redirect flow.
  */
@@ -181,39 +183,60 @@ class RedirectFlowController extends \PaymentMethodController {
     if ($payment->method->controller_data['creditor']) {
       $data['links']['creditor'] = '';
     }
-    $response = $this->getClient($payment)->post('redirect_flows', [], ['redirect_flows' => $data]);
-    $payment->gocardless = [
-      'redirect_flow_id' => $response['redirect_flows']['id'],
-      'session_token' => $data['session_token'],
-    ];
-    $payment->setStatus(new \PaymentStatusItem(PaymentStatus::REDIRECT_FLOW_CREATED));
-    entity_save('payment', $payment);
-    $payment->contextObj->redirect($response['redirect_flows']['redirect_url'], []);
+    try {
+      $response = $this->getClient($payment)->post('redirect_flows', [], ['redirect_flows' => $data]);
+      $payment->gocardless = [
+        'redirect_flow_id' => $response['redirect_flows']['id'],
+        'session_token' => $data['session_token'],
+      ];
+      $payment->setStatus(new \PaymentStatusItem(PaymentStatus::REDIRECT_FLOW_CREATED));
+      entity_save('payment', $payment);
+      $payment->contextObj->redirect($response['redirect_flows']['redirect_url'], []);
+    }
+    catch (ApiError $e) {
+      $payment->setStatus(new \PaymentStatusItem(PAYMENT_STATUS_FAILED));
+    }
+  }
+
+  /**
+   * Callback for when the user returned from gocardless’ payment pages.
+   */
+  public function redirectReturn(\Payment $payment) {
+    if ($payment->getStatus()->status == PaymentStatus::REDIRECT_FLOW_CREATED) {
+      $payment->setStatus(new \PaymentStatusItem(PaymentStatus::REDIRECT_FLOW_RETURNED));
+    }
+    try {
+      if ($payment->getStatus()->status == PaymentStatus::REDIRECT_FLOW_RETURNED) {
+        $this->completeRedirectFlow($payment);
+        $payment->setStatus(new \PaymentStatusItem(PaymentStatus::MANDATE_CREATED));
+      }
+      if ($payment->getStatus()->status == PaymentStatus::MANDATE_CREATED) {
+        $this->processLineItems($payment);
+        $payment->setStatus(new \PaymentStatusItem(PAYMENT_STATUS_SUCCESS));
+      }
+    }
+    catch (ApiError $e) {
+      $payment->setStatus(new \PaymentStatusItem(PAYMENT_STATUS_FAILED));
+    }
+    $payment->finish();
   }
 
   /**
    * Complete the redirect flow in order to create the customer and mandate.
    */
   public function completeRedirectFlow(\Payment $payment) {
-    if ($payment->getStatus()->status != PaymentStatus::REDIRECT_FLOW_CREATED) {
-      return;
-    }
     $flow_id = $payment->gocardless['redirect_flow_id'];
     $data['data']['session_token'] = $payment->gocardless['session_token'];
     $response = $this->getClient($payment)
       ->post("redirect_flows/$flow_id/actions/complete", [], $data);
     $payment->gocardless['mandate_id'] = $response['redirect_flows']['links']['mandate'];
     $payment->gocardless['customer_id'] = $response['redirect_flows']['links']['customer'];
-    $payment->setStatus(new \PaymentStatusItem(PaymentStatus::MANDATE_CREATED));
   }
 
   /**
    * Create payments and subscriptions based on the line-items.
    */
   public function processLineItems(\Payment $payment) {
-    if ($payment->getStatus()->status != PaymentStatus::MANDATE_CREATED) {
-      return;
-    }
     $client = $this->getClient($payment);
     $currency = currency_load($payment->currency_code);
     foreach ($payment->line_items as $name => $line_item) {
@@ -247,7 +270,6 @@ class RedirectFlowController extends \PaymentMethodController {
         $response = $client->post('payments', [], $data);
       }
     }
-    $payment->setStatus(new \PaymentStatusItem(PAYMENT_STATUS_SUCCESS));
   }
 
 }

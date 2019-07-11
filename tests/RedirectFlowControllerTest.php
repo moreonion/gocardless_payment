@@ -102,11 +102,31 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
   }
 
   /**
+   * Test control flow based on status items.
+   */
+  public function testRedirectReturn() {
+    $builder = $this->getMockBuilder(RedirectFlowController::class)
+      ->setMethods(['completeRedirectFlow', 'processLineItems'])
+      ->disableOriginalConstructor();
+
+    $controller = $builder->getMock();
+    $controller->expects($this->never())->method('completeRedirectFlow');
+    $controller->expects($this->never())->method('processLineItems');
+    $controller->redirectReturn($this->payment);
+
+    $this->payment->setStatus(new \PaymentStatusItem(PaymentStatus::REDIRECT_FLOW_CREATED));
+    $controller = $builder->getMock();
+    $controller->expects($this->once())->method('completeRedirectFlow');
+    $controller->expects($this->once())->method('processLineItems');
+    $controller->redirectReturn($this->payment);
+    $this->assertEqual(PAYMENT_STATUS_SUCCESS, $this->payment->getStatus()->status);
+  }
+
+  /**
    * Test completing a redirect flow.
    */
   public function testCompleteRedirectFlow() {
     $payment = $this->payment;
-    $payment->setStatus(new \PaymentStatusItem(PaymentStatus::REDIRECT_FLOW_CREATED));
     $payment->gocardless['redirect_flow_id'] = 'RE123';
     $payment->gocardless['session_token'] = 'test session token';
 
@@ -133,7 +153,6 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
       'mandate_id' => 'MD123',
       'customer_id' => 'CU123',
     ], $payment->gocardless);
-    $this->assertEqual(PaymentStatus::MANDATE_CREATED, $payment->getStatus()->status);
   }
 
   /**
@@ -141,7 +160,6 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
    */
   public function testProcessLineItemsMonthly() {
     $payment = $this->payment;
-    $payment->setStatus(new \PaymentStatusItem(PaymentStatus::MANDATE_CREATED));
     $payment->gocardless = [
       'redirect_flow_id' => 'RE123',
       'session_token' => 'test session token',
@@ -168,7 +186,6 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
       ->with('subscriptions', [], $post_data)->willReturn($response_data);
 
     $payment->method->controller->processLineItems($payment, $client);
-    $this->assertEqual(PAYMENT_STATUS_SUCCESS, $payment->getStatus()->status);
   }
 
   /**
@@ -176,7 +193,6 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
    */
   public function testProcessLineItemsOneTime() {
     $payment = $this->payment;
-    $payment->setStatus(new \PaymentStatusItem(PaymentStatus::MANDATE_CREATED));
     unset($payment->line_items['line_item_name']->recurrence['interval_unit']);
     $payment->gocardless = [
       'redirect_flow_id' => 'RE123',
@@ -201,7 +217,6 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
       ->with('payments', [], $post_data)->willReturn($response_data);
 
     $payment->method->controller->processLineItems($payment, $client);
-    $this->assertEqual(PAYMENT_STATUS_SUCCESS, $payment->getStatus()->status);
   }
 
   /**

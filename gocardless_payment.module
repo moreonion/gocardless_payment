@@ -84,9 +84,7 @@ function gocardless_payment_check_hash(Payment $payment, $hash) {
  */
 function gocardless_payment_return_callback(Payment $payment) {
   $controller = $payment->method->controller;
-  $controller->completeRedirectFlow($payment);
-  $controller->processLineItems($payment);
-  $payment->finish();
+  $controller->redirectReturn($payment);
 }
 
 /**

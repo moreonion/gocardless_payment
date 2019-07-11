@@ -2,7 +2,9 @@
 
 namespace Drupal\gocardless_payment;
 
+use Drupal\gocardless_payment\Errors\ApiError;
 use Drupal\little_helpers\Rest\Client;
+use Drupal\little_helpers\Rest\HttpError;
 
 /**
  * Client for the gocardless REST-API.
@@ -42,7 +44,16 @@ class ApiClient extends Client {
   protected function send($path, array $query = [], $data = NULL, array $options = []) {
     $options['headers']['Authorization'] = "Bearer {$this->token}";
     $options['headers']['GoCardless-Version'] = static::API_VERSION;
-    return parent::send($path, $query, $data, $options);
+    try {
+      return parent::send($path, $query, $data, $options);
+    }
+    catch (HttpError $e) {
+      if ($error = ApiError::fromHttpError($e)) {
+        watchdog_exception('gocardless_payment', $e);
+        throw $error;
+      }
+      throw $e;
+    }
   }
 
 }
