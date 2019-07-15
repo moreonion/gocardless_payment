@@ -22,11 +22,11 @@ class ApiError extends \RuntimeException {
    *   A HttpError thrown because of a non 2xx HTTP response.
    */
   public static function fromHttpError(HttpError $e) {
-    if (!empty($e->result->data['error']['type'])) {
-      $error = $e->result->data['error'];
+    if (($data = drupal_json_decode($e->result->data)) && !empty($data['error']['type'])) {
+      $error = $data['error'];
       $types = static::TYPE_MAP;
       if (isset($types[$error['type']])) {
-        return $types[$error['type']]::fromError($error);
+        return new $types[$error['type']]($error, $e);
       }
     }
   }

@@ -158,9 +158,9 @@ class RedirectFlowController extends \PaymentMethodController {
         if ($line_item->quantity > 0) {
           $at_least_one_line_item = TRUE;
         }
-        if (!empty($line_item->recurrence['interval_unit'])) {
-          if (!in_array($line_item->recurrence['interval_unit'], ['yearly', 'monthly', 'weekly'])) {
-            throw new \PaymentValidationException(t('Unsupported recurrence interval_unit: @unit.', ['@unit' => $line_item->recurrence['interval_unit']]));
+        if (!empty($line_item->recurrence->interval_unit)) {
+          if (!in_array($line_item->recurrence->interval_unit, ['yearly', 'monthly', 'weekly'])) {
+            throw new \PaymentValidationException(t('Unsupported recurrence interval_unit: @unit.', ['@unit' => $line_item->recurrence->interval_unit]));
           }
         }
       }
@@ -252,14 +252,14 @@ class RedirectFlowController extends \PaymentMethodController {
         'name' => $name,
       ];
       $data['links']['mandate'] = $payment->gocardless['mandate_id'];
-      if (!empty($line_item->recurrence['interval_unit'])) {
+      if (!empty($line_item->recurrence->interval_unit)) {
         $recurrence = $line_item->recurrence;
         $data += array_filter([
           'name' => $line_item->description,
-          'interval_unit' => $recurrence['interval_unit'],
-          'interval' => $recurrence['interval_value'] ?? 1,
-          'day_of_month' => $recurrence['day_of_month'] ?? NULL,
-          'count' => $recurrence['count'] ?? NULL,
+          'interval_unit' => $recurrence->interval_unit,
+          'interval' => $recurrence->interval_value ?? 1,
+          'day_of_month' => $recurrence->day_of_month ?? NULL,
+          'count' => $recurrence->count ?? NULL,
         ]);
         $data = ['subscriptions' => $data];
         $response = $client->post('subscriptions', [], $data);

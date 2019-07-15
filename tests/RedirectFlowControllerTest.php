@@ -2,6 +2,9 @@
 
 namespace Drupal\gocardless_payment;
 
+use Drupal\gocardless_payment\Errors\ApiError;
+use Drupal\gocardless_payment\Errors\InvalidApiUsage;
+use Drupal\little_helpers\Rest\HttpError;
 use Drupal\payment_context\NullPaymentContext;
 use Upal\DrupalUnitTestCase;
 
@@ -45,7 +48,7 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
       'description' => 'line item description',
       'amount' => 5,
       'quantity' => 3,
-      'recurrence' => [
+      'recurrence' => (object) [
         'interval_unit' => 'monthly',
         'day_of_month' => 4,
       ],
@@ -59,6 +62,7 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
     if ($this->payment->pid) {
       entity_delete('payment', $this->payment->pid);
     }
+    drupal_static_reset('gocardless_payment_test_watchdog');
     parent::tearDown();
   }
 
@@ -101,6 +105,9 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
     ], $payment->gocardless);
   }
 
+  /**
+   * Test creating a redirect flow with configured creditor.
+   */
   public function testExecuteWithCreditor() {
     $payment = $this->payment;
     $payment->method->controller_data['creditor'] = 'CR123';
@@ -118,6 +125,32 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
     ]);
     $payment->method->controller->execute($payment, $client);
     $this->assertEqual('CR123', $post_data['links']['creditor']);
+  }
+
+  public function testExecuteWithError() {
+    $payment = $this->payment;
+    $client = $payment->method->controller->getClient($payment);
+
+    $error = new HttpError((object) [
+      'code' => 400,
+      'error' => 'Bad Request',
+      'data' => drupal_json_encode([
+        'error' => [
+          'message' => 'Invalid document structure',
+          'type' => 'invalid_api_usage',
+          'code' => 400,
+          'errors' => [
+            'reason' => 'invalid_document_structure',
+            'message' => 'Invalid document structure',
+          ],
+        ],
+      ]),
+    ]);
+    $e = ApiError::fromHttpError($error);
+    $this->assertInstanceOf(InvalidApiUsage::class, $e);
+    $client->method('post')->willThrowException($e);
+    $payment->method->controller->execute($payment, $client);
+    $this->assertEqual($payment->getStatus()->status, PAYMENT_STATUS_FAILED);
   }
 
   /**
@@ -212,7 +245,7 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
    */
   public function testProcessLineItemsOneTime() {
     $payment = $this->payment;
-    unset($payment->line_items['line_item_name']->recurrence['interval_unit']);
+    unset($payment->line_items['line_item_name']->recurrence->interval_unit);
     $payment->gocardless = [
       'redirect_flow_id' => 'RE123',
       'session_token' => 'test session token',
@@ -273,7 +306,7 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
    */
   public function testValidatePaymentWithInvalidRecurrence() {
     $payment = $this->payment;
-    $payment->line_items['line_item_name']->recurrence['interval_unit'] = 'invalid';
+    $payment->line_items['line_item_name']->recurrence->interval_unit = 'invalid';
     $e = $this->getValidationException($payment);
     $this->assertNotEmpty($e);
     $this->assertEqual('Unsupported recurrence interval_unit: invalid.', $e->getMessage());

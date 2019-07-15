@@ -5,3 +5,19 @@
  */
 function gocardless_payment_test_finish_callback(\Payment $payment) {
 }
+
+/**
+ * Implements hook_watchdog().
+ */
+function gocardless_payment_test_watchdog($log_entry) {
+  // Capture log messages for tests.
+  $entries = &drupal_static(__FUNCTION__, []);
+  $entries[] = $log_entry;
+}
+
+/**
+ * Get captured log messages.
+ */
+function gocardless_payment_test_watchdog_get_entries() {
+  return drupal_static('gocardless_payment_test_watchdog', []);
+}
