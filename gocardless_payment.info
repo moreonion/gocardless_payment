@@ -1,7 +1,7 @@
 name = Gocardless direct debit payment
 description = Integrates gocardless with the payment module.
 core = 7.x
-php = 7.1
+php = 7.0
 
 dependencies[] = currency
 dependencies[] = little_helpers (>= 7.x-1.4)
