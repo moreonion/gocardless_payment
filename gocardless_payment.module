@@ -7,12 +7,15 @@
 
 use Drupal\gocardless_payment\PaymentStatus;
 use Drupal\gocardless_payment\RedirectFlowController;
+use Drupal\gocardless_payment\RedirectFlowControllerRecurrent;
+use Drupal\webform_paymethod_select\PaymentRecurrentController;
 
 /**
  * Implements hook_payment_method_controller_info().
  */
 function gocardless_payment_payment_method_controller_info() {
-  $info['gocardless_redirect_flow'] = RedirectFlowController::class;
+  $recurrent = module_exists('webform_paymethod_select') && interface_exists(PaymentRecurrentController::class, TRUE);
+  $info['gocardless_redirect_flow'] = $recurrent ? RedirectFlowControllerRecurrent::class : RedirectFlowController::class;
   return $info;
 }
 
