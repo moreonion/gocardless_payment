@@ -2,7 +2,7 @@ name = Gocardless direct debit payment
 description = Integrates gocardless with the payment module.
 core = 7.x
 php = 7.0
-configure = admin/config/system/variable/module/gocardless_payment
+configure = admin/config/services/payment/gocardless
 
 dependencies[] = currency
 dependencies[] = drupal:filter

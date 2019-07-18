@@ -57,6 +57,14 @@ function gocardless_payment_menu() {
     'access arguments' => [2, 3],
     'type' => MENU_CALLBACK,
   ];
+  $items['admin/config/services/payment/gocardless'] = [
+    'title' => 'GoCardless payment settings',
+    'description' => 'Configure site-wide options for GoCardless.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['variable_module_form', 'gocardless_payment'],
+    'access arguments' => ['payment.payment.administer'],
+    'weight' => 10,
+  ];
   return $items;
 }
 
