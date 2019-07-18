@@ -61,9 +61,13 @@ class CustomerDataForm implements PaymentFormInterface {
     });
 
     $element['customer_data'] = $data_fieldset;
-    $element += [
-      '#description' => t('When you submit this form you will be redirected to Gocardless to make the payment.'),
+
+    $message = variable_get_value('gocardless_payment_redirect_message');
+    $element['redirect_message'] = [
+      '#type' => 'container',
+      '#attributes' => ['class' => ['gocardless-payment-redirect-message']],
     ];
+    $element['redirect_message'][]['#markup'] = check_markup($message['value'], $message['format']);
     return $element;
   }
 
