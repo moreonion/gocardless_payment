@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/moreonion/gocardless_payment.svg?branch=7.x-1.x)](https://travis-ci.org/moreonion/gocardless_payment) [![codecov](https://codecov.io/gh/moreonion/gocardless_payment/branch/7.x-1.x/graph/badge.svg)](https://codecov.io/gh/moreonion/gocardless_payment)
+[![Build Status](https://travis-ci.com/moreonion/gocardless_payment.svg?branch=7.x-1.x)](https://travis-ci.com/moreonion/gocardless_payment) [![codecov](https://codecov.io/gh/moreonion/gocardless_payment/branch/7.x-1.x/graph/badge.svg)](https://codecov.io/gh/moreonion/gocardless_payment)
 
 # GoCardless payment
 
