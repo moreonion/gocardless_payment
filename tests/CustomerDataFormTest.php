@@ -55,6 +55,7 @@ class CustomerDataFormTest extends DrupalUnitTestCase {
       '#type' => 'container',
       '#parents' => [],
     ];
+    unset($element['redirect_message']);
     ElementTree::applyRecursively($element, function (&$element, $key, &$parent) use (&$form_state) {
       if ($parent) {
         $element['#parents'] = array_merge($parent['#parents'], [$key]);
