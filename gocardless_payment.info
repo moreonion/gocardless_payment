@@ -6,7 +6,7 @@ configure = admin/config/services/payment/gocardless
 
 dependencies[] = currency
 dependencies[] = drupal:filter
-dependencies[] = little_helpers (>= 7.x-1.4)
+dependencies[] = little_helpers:little_helpers (>= 7.x-2.0-alpha6)
 dependencies[] = payment (>= 7.x-1.10)
 dependencies[] = payment_context
 dependencies[] = payment_controller_data
