@@ -312,4 +312,43 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
     $this->assertEqual('Unsupported recurrence interval_unit: invalid.', $e->getMessage());
   }
 
+  /**
+   * Test processing recurrence dates.
+   */
+  public function testProcessDate() {
+    $now = new \DateTime('2019-12-21');
+
+    $recurrence = (object) [
+      'interval_unit' => 'yearly',
+      'day_of_month' => 30,
+    ];
+    $v = RedirectFlowController::processDate($recurrence, $now);
+    // Day of month > 28 will be turned into -1 (the last day of the month).
+    // Month defaults to the next month.
+    $this->assertEqual(['january', -1], $v);
+
+    $recurrence = (object) [
+      'interval_unit' => 'yearly',
+    ];
+    $v = RedirectFlowController::processDate($recurrence, $now);
+    // Null values are left as is.
+    $this->assertEqual([NULL, NULL], $v);
+
+    $recurrence = (object) [
+      'interval_unit' => 'monthly',
+      'day_of_month' => 11,
+      'month' => 1,
+    ];
+    $v = RedirectFlowController::processDate($recurrence, $now);
+    $this->assertEqual([NULL, 11], $v);
+
+    $recurrence = (object) [
+      'interval_unit' => 'weekly',
+      'day_of_month' => 11,
+      'month' => 1,
+    ];
+    $v = RedirectFlowController::processDate($recurrence, $now);
+    $this->assertEqual([NULL, NULL], $v);
+  }
+
 }
