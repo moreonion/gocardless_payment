@@ -10,6 +10,21 @@ use Drupal\gocardless_payment\Errors\ApiError;
 class RedirectFlowController extends \PaymentMethodController {
 
   const SUPPORTED_CURRENCIES = ['GBP', 'EUR', 'SEK', 'DKK', 'AUD', 'NZD', 'CAD'];
+  const MONTHS = [
+    NULL => NULL,
+    1 => 'january',
+    2 => 'february',
+    3 => 'march',
+    4 => 'april',
+    5 => 'may',
+    6 => 'june',
+    7 => 'july',
+    8 => 'august',
+    9 => 'september',
+    10 => 'october',
+    11 => 'november',
+    12 => 'december',
+  ];
   protected $client = NULL;
 
   public $controller_data_defaults = [
@@ -254,11 +269,13 @@ class RedirectFlowController extends \PaymentMethodController {
       $data['links']['mandate'] = $payment->gocardless['mandate_id'];
       if (!empty($line_item->recurrence->interval_unit)) {
         $recurrence = $line_item->recurrence;
+        list($month, $day_of_month) = $this->processDate($recurrence);
         $data += array_filter([
           'name' => $line_item->description,
           'interval_unit' => $recurrence->interval_unit,
           'interval' => $recurrence->interval_value ?? 1,
-          'day_of_month' => $recurrence->day_of_month ?? NULL,
+          'day_of_month' => $day_of_month,
+          'month' => $month,
           'count' => $recurrence->count ?? NULL,
         ]);
         $data = ['subscriptions' => $data];
@@ -269,6 +286,46 @@ class RedirectFlowController extends \PaymentMethodController {
         $data = ['payments' => $data];
         $response = $client->post('payments', [], $data);
       }
+    }
+  }
+
+  /**
+   * Calculate the correct month / day-of-month for the recurrence.
+   *
+   * @param object $recurrence
+   *   The recurrence data for a payment line item.
+   * @param \DateTime $now
+   *   Optionally specify a date and time to base the default values on.
+   *
+   * @return array
+   *   A numeric array with two items:
+   *   1. (string|null) The name of the month as needed by the API or NULL.
+   *   2. (string|null) The chosen day of month.
+   *   For yearly both month and day of month must be empty, or both must have a
+   *   value. An empty value will default to the current day or month in this
+   *   case.
+   */
+  public static function processDate($recurrence, \DateTime $now = NULL) {
+    $day = function(int $d) {
+      return $d > 28 ? -1 : $d;
+    };
+    switch ($recurrence->interval_unit) {
+      case 'weekly':
+        return [NULL, NULL];
+      case 'monthly':
+        return [NULL, $day($recurrence->day_of_month ?? NULL)];
+      case 'yearly':
+        if (empty($recurrence->day_of_month) && empty($recurrence->month)) {
+          return [NULL, NULL];
+        }
+        // If either month or day of month is set then we need to set both.
+        $now = $now ?? new \DateTime();
+        $months = static::MONTHS;
+        $next_month = ($now->format('m') % 12) + 1;
+        return [
+          $months[$recurrence->month ?? $next_month],
+          $day($recurrence->day_of_month ?? $now->format('d')),
+        ];
     }
   }
 
