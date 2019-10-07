@@ -306,7 +306,7 @@ class RedirectFlowController extends \PaymentMethodController {
    *   case.
    */
   public static function processDate($recurrence, \DateTime $now = NULL) {
-    $day = function(int $d) {
+    $day = function(int $d = NULL) {
       return $d > 28 ? -1 : $d;
     };
     switch ($recurrence->interval_unit) {

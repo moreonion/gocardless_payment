@@ -343,6 +343,12 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
     $this->assertEqual([NULL, 11], $v);
 
     $recurrence = (object) [
+      'interval_unit' => 'monthly',
+    ];
+    $v = RedirectFlowController::processDate($recurrence, $now);
+    $this->assertEqual([NULL, NULL], $v);
+
+    $recurrence = (object) [
       'interval_unit' => 'weekly',
       'day_of_month' => 11,
       'month' => 1,
