@@ -193,7 +193,7 @@ class RedirectFlowController extends \PaymentMethodController {
     $data['session_token'] = drupal_random_key(8);
     $signature = gocardless_payment_signature($payment->pid);
     $data['success_redirect_url'] = url("gocardless_payment/return/{$payment->pid}/$signature", ['absolute' => TRUE]);
-    $data['description'] = format_string($payment->description, $payment->description_arguments);
+    $data['description'] = theme('gocardless_payment_description', ['payment' => $payment]);
     $data['prefilled_customer'] = $payment->method_data['customer_data'];
     if ($creditor = $payment->method->controller_data['creditor']) {
       $data['links']['creditor'] = $creditor;
