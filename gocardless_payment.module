@@ -169,3 +169,15 @@ function gocardless_payment_payment_update(Payment $payment) {
 function gocardless_payment_payment_delete(Payment $payment) {
   db_delete('gocardless_payment')->condition('pid', $payment->pid)->execute();
 }
+
+/**
+ * Implements hook_theme().
+ */
+function gocardless_payment_theme($existing, $type, $theme, $path) {
+  return [
+    'gocardless_payment_description' => [
+      'variables' => ['payment' => NULL],
+      'file' => 'gocardless_payment.theme.inc',
+    ],
+  ];
+}
