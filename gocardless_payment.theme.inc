@@ -16,7 +16,7 @@ function theme_gocardless_payment_description($variables) {
   foreach ($payment->line_items as $name => $line_item) {
     $amount = $currency->format($line_item->totalAmount(TRUE));
     if (empty($line_item->recurrence->interval_unit)) {
-      array_unshift($lines, t('A one-off payment of !amount', ['!amount' => $amount]));
+      array_unshift($lines, t('!amount only once', ['!amount' => $amount]));
     }
     else {
       $interval_unit = $line_item->recurrence->interval_unit;
@@ -26,8 +26,8 @@ function theme_gocardless_payment_description($variables) {
         case 'weekly':
           $lines[] = format_plural(
             $interval_value,
-            'Regular payment of !amount per week',
-            'Regular payment of !amount every @count weeks',
+            '!amount per week',
+            '!amount every @count weeks',
             ['!amount' => $amount]
           );
           break;
@@ -35,8 +35,8 @@ function theme_gocardless_payment_description($variables) {
         case 'monthly':
           $lines[] = format_plural(
             $interval_value,
-            'Regular payment of !amount per month',
-            'Regular payment of !amount every @count months',
+            '!amount per month',
+            '!amount every @count months',
             ['!amount' => $amount]
           );
           break;
@@ -44,13 +44,13 @@ function theme_gocardless_payment_description($variables) {
         case 'yearly':
           $lines[] = format_plural(
             $interval_value,
-            'Regular payment of !amount per year',
-            'Regular payment of !amount every @count years',
+            '!amount per year',
+            '!amount every @count years',
             ['!amount' => $amount]
           );
           break;
       }
     }
   }
-  return implode('<br>', $lines);
+  return implode(' '. t('plus additional') . ' ', $lines);
 }
