@@ -95,7 +95,7 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
     $this->assertStringEndsWith("/gocardless_payment/return/{$payment->pid}/$signature", $post_data['success_redirect_url']);
     unset($post_data['success_redirect_url']);
     $this->assertEqual([
-      'description' => 'Regular payment of €15.00 per month',
+      'description' => '€15.00 per month',
       'prefilled_customer' => $payment->method_data['customer_data'],
     ], $post_data);
 

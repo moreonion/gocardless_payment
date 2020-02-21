@@ -40,11 +40,11 @@ class ThemeTest extends DrupalUnitTestCase {
     ]));
     $output = theme('gocardless_payment_description', ['payment' => $payment]);
     $this->assertEqual([
-      'A one-off payment of €15.00',
-      'Regular payment of €7.00 per month',
-      'Regular payment of €22.00 per week',
-      'Regular payment of €39.00 per year',
-    ], explode('<br>', $output));
+      '€15.00 only once',
+      '€7.00 per month',
+      '€22.00 per week',
+      '€39.00 per year',
+    ], explode(' plus additional ', $output));
   }
 
 }
