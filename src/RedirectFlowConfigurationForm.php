@@ -48,6 +48,12 @@ class RedirectFlowConfigurationForm implements MethodFormInterface {
       '#description' => t('Specify a creditor if your gocardless account manages multiple creditors.'),
       '#default_value' => $controller_data['creditor'],
     ];
+    $form['one_off_payments'] = [
+      '#type' => 'checkbox',
+      '#title' => t('Enable for one-off payments'),
+      '#description' => t('Check this if you want to enable this payment method for one-off payments.'),
+      '#default_value' => $controller_data['one_off_payments'],
+    ];
 
     $form['input_settings'] = [
       '#type' => 'fieldset',

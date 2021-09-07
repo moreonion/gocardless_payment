@@ -313,6 +313,28 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
   }
 
   /**
+   * Test validating a one-off payment when one-off payments are disabled.
+   */
+  public function testValidatePaymentWithOneOffDisabled() {
+    $payment = $this->payment;
+    $payment->line_items['line_item_name']->recurrence->interval_unit = NULL;
+    $payment->method->controller_data['one_off_payments'] = FALSE;
+    $e = $this->getValidationException($payment);
+    $this->assertNotEmpty($e);
+    $this->assertEqual('The payment method is configured to not handle one-off payments.', $e->getMessage());
+  }
+
+  /**
+   * Test validating a one-off payment when one-off payments are enabled.
+   */
+  public function testValidatePaymentWithOneOffEnabled() {
+    $payment = $this->payment;
+    $payment->line_items['line_item_name']->recurrence->interval_unit = NULL;
+    $e = $this->getValidationException($payment);
+    $this->assertEmpty($e);
+  }
+
+  /**
    * Test processing recurrence dates.
    */
   public function testProcessDate() {
