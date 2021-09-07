@@ -16,7 +16,7 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
   /**
    * Create a test payment.
    */
-  public function setUp() {
+  public function setUp(): void {
     parent::setUp();
     $controller = new RedirectFlowController();
     $controller->setClient($this->createMock(ApiClient::class));
@@ -58,7 +58,7 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
   /**
    * Remove the test payment.
    */
-  public function tearDown() {
+  public function tearDown(): void {
     if ($this->payment->pid) {
       entity_delete('payment', $this->payment->pid);
     }
