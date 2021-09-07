@@ -29,6 +29,7 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
       ],
     ]);
     $context = $this->createMock(NullPaymentContext::class);
+    $context->method('toContextData')->will($this->returnValue([]));
     $this->payment = new \Payment([
       'description' => 'gocardless test payment',
       'currency_code' => 'EUR',
