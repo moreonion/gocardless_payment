@@ -283,7 +283,12 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
    */
   protected function getValidationException(\Payment $payment) {
     try {
-      $payment->method->controller->validate($payment, $payment->method, TRUE);
+      // The payment method is not yet set when validating although setUp()
+      // provides it.
+      $method = $payment->method;
+      $payment->method = NULL;
+      $method->controller->validate($payment, $method, TRUE);
+      $payment->method = $method;
     }
     catch (\PaymentValidationException $e) {
       return $e;

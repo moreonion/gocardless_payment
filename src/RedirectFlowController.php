@@ -180,7 +180,7 @@ class RedirectFlowController extends \PaymentMethodController {
           }
         }
         else {
-          if (!($payment->method->controller_data['one_off_payments'] ?? TRUE)) {
+          if (!($method->controller_data['one_off_payments'] ?? TRUE)) {
             throw new \PaymentValidationException(t('The payment method is configured to not handle one-off payments.'));
           }
         }
