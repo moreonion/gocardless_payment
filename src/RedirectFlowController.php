@@ -31,6 +31,7 @@ class RedirectFlowController extends \PaymentMethodController {
     'testmode' => FALSE,
     'token' => '',
     'creditor' => '',
+    'one_off_payments' => TRUE,
     'input_settings' => [
       'given_name' => [
         'display' => 'hidden',
@@ -176,6 +177,11 @@ class RedirectFlowController extends \PaymentMethodController {
         if (!empty($line_item->recurrence->interval_unit)) {
           if (!in_array($line_item->recurrence->interval_unit, ['yearly', 'monthly', 'weekly'])) {
             throw new \PaymentValidationException(t('Unsupported recurrence interval_unit: @unit.', ['@unit' => $line_item->recurrence->interval_unit]));
+          }
+        }
+        else {
+          if (!($method->controller_data['one_off_payments'] ?? TRUE)) {
+            throw new \PaymentValidationException(t('The payment method is configured to not handle one-off payments.'));
           }
         }
       }

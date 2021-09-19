@@ -16,7 +16,7 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
   /**
    * Create a test payment.
    */
-  public function setUp() {
+  public function setUp(): void {
     parent::setUp();
     $controller = new RedirectFlowController();
     $controller->setClient($this->createMock(ApiClient::class));
@@ -29,6 +29,7 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
       ],
     ]);
     $context = $this->createMock(NullPaymentContext::class);
+    $context->method('toContextData')->will($this->returnValue([]));
     $this->payment = new \Payment([
       'description' => 'gocardless test payment',
       'currency_code' => 'EUR',
@@ -58,7 +59,7 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
   /**
    * Remove the test payment.
    */
-  public function tearDown() {
+  public function tearDown(): void {
     if ($this->payment->pid) {
       entity_delete('payment', $this->payment->pid);
     }
@@ -282,7 +283,12 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
    */
   protected function getValidationException(\Payment $payment) {
     try {
-      $payment->method->controller->validate($payment, $payment->method, TRUE);
+      // The payment method is not yet set when validating although setUp()
+      // provides it.
+      $method = $payment->method;
+      $payment->method = NULL;
+      $method->controller->validate($payment, $method, TRUE);
+      $payment->method = $method;
     }
     catch (\PaymentValidationException $e) {
       return $e;
@@ -310,6 +316,28 @@ class RedirectFlowControllerTest extends DrupalUnitTestCase {
     $e = $this->getValidationException($payment);
     $this->assertNotEmpty($e);
     $this->assertEqual('Unsupported recurrence interval_unit: invalid.', $e->getMessage());
+  }
+
+  /**
+   * Test validating a one-off payment when one-off payments are disabled.
+   */
+  public function testValidatePaymentWithOneOffDisabled() {
+    $payment = $this->payment;
+    $payment->line_items['line_item_name']->recurrence->interval_unit = NULL;
+    $payment->method->controller_data['one_off_payments'] = FALSE;
+    $e = $this->getValidationException($payment);
+    $this->assertNotEmpty($e);
+    $this->assertEqual('The payment method is configured to not handle one-off payments.', $e->getMessage());
+  }
+
+  /**
+   * Test validating a one-off payment when one-off payments are enabled.
+   */
+  public function testValidatePaymentWithOneOffEnabled() {
+    $payment = $this->payment;
+    $payment->line_items['line_item_name']->recurrence->interval_unit = NULL;
+    $e = $this->getValidationException($payment);
+    $this->assertEmpty($e);
   }
 
   /**
